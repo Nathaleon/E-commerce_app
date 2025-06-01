@@ -1,0 +1,88 @@
+import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:projectakhir_mobile/pages/login_page.dart';
+import 'package:projectakhir_mobile/services/user_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class AuthController {
+  /// Login
+  static Future<void> login({
+    required BuildContext context,
+    required String username,
+    required String password,
+    required void Function(bool) setLoading,
+    required void Function(String token, String username) onSuccess,
+  }) async {
+    setLoading(true);
+    try {
+      final response = await UserService.login(username, password);
+      final token = response.token;
+
+      // Simpan token dan username di SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_token', token);
+      await prefs.setString('username', username);
+
+      // Decode token untuk ambil role (opsional disimpan)
+      final decoded = JwtDecoder.decode(token);
+      final role = decoded['role'];
+      await prefs.setString('role', role);
+
+      // Panggil callback UI
+      onSuccess(token, username);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// Register
+  static Future<void> register({
+    required BuildContext context,
+    required String username,
+    required String password,
+    required void Function(bool) setLoading,
+    required void Function() onSuccess,
+  }) async {
+    setLoading(true);
+    try {
+      final response = await UserService.register({
+        "username": username,
+        "email": "$username@example.com", // fallback jika tidak ada email field
+        "password": password,
+        "role": "customer",
+      });
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        onSuccess();
+      } else {
+        final error =
+            response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Register failed: $error');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Register failed: $e')));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /// Logout
+  static Future<void> logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('access_token');
+    await prefs.remove('username');
+    await prefs.remove('role');
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
+}
