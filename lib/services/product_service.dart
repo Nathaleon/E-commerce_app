@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:http/http.dart' as http;
 import 'package:projectakhir_mobile/models/product_model.dart';
 import 'package:projectakhir_mobile/secrets/user_secrets.dart';

@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
 import 'package:projectakhir_mobile/services/cart_service.dart';
-
-class CartPage extends StatefulWidget {
-  final String? token;
-  final VoidCallback? onCheckoutDone;
-
-  const CartPage({super.key, this.token, this.onCheckoutDone});
-
-  @override
-  State<CartPage> createState() => _CartPageState();
-}
+import 'package:projectakhir_mobile/services/order_service.dart';
 
 class CartPage extends StatefulWidget {
   final String? token;

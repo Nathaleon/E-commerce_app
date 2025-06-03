@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:projectakhir_mobile/secrets/user_secrets.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CartService {
   static final List<CartItem> _items = [];

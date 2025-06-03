@@ -34,13 +34,7 @@ class _MainProductPageState extends State<MainProductPage> {
   void initState() {
     super.initState();
     products = ProductService.getAllProducts();
-    CartService.getCartItems(widget.token ?? '').then((items) {
-      if (mounted) {
-        setState(() {
-          // Update UI or state if needed
-        });
-      }
-    });
+    CartService.loadCart();
 
     if (widget.role != null) {
       userRole = widget.role;
@@ -94,7 +88,7 @@ class _MainProductPageState extends State<MainProductPage> {
     quantity: product.stock > 0 ? 1 : 0, // Set quantity to 1 if stock is available
   );
 
-  await CartService.addToCart(cartItem, widget.token!);
+  await CartService.addToCart(cartItem);
 
   if (mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
