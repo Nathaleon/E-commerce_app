@@ -1,35 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/main_product_page.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:projectakhir_mobile/pages/base_page.dart';
+import 'package:projectakhir_mobile/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('access_token');
   final username = prefs.getString('username');
+  String? role;
 
-  runApp(MyApp(token: token, username: username));
+  if (token != null) {
+    final decoded = JwtDecoder.decode(token);
+    role = decoded['role'];
+  }
+
+  runApp(MyApp(token: token, username: username, role: role));
 }
 
 class MyApp extends StatelessWidget {
   final String? token;
   final String? username;
+  final String? role;
 
-  const MyApp({super.key, this.token, this.username});
+  const MyApp({super.key, this.token, this.username, this.role});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'E-Commerce Flutter',
+      title: 'E-Commerce App',
       theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-        brightness: Brightness.light,
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      home: (token != null && username != null)
-          ? MainProductPage(token: token!, username: username!)
-          : const MainProductPage(token: null, username: null),
+      home: BasePage(token: token, username: username, role: role),
+      routes: {
+        '/login': (context) => const LoginPage(),
+      },
     );
   }
 }

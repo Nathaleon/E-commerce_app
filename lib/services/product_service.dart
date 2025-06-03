@@ -21,43 +21,69 @@ class ProductService {
     return Product.fromJson(jsonDecode(response.body));
   }
 
-  static Future<http.StreamedResponse> createProduct(
-    Map<String, String> fields,
-    File imageFile,
+  static Future<bool> createProduct(
+    Map<String, String> productData,
     String token,
   ) async {
-    final uri = Uri.parse('$baseUrl/products/add');
-    final request = http.MultipartRequest('POST', uri);
-    request.headers['Authorization'] = 'Bearer $token';
-    request.fields.addAll(fields);
-    request.files.add(
-      await http.MultipartFile.fromPath('image', imageFile.path),
-    );
-    return await request.send();
-  }
-
-  static Future<http.StreamedResponse> updateProduct(
-    int id,
-    Map<String, String> fields,
-    File? imageFile,
-    String token,
-  ) async {
-    final uri = Uri.parse('$baseUrl/products/$id');
-    final request = http.MultipartRequest('PUT', uri);
-    request.headers['Authorization'] = 'Bearer $token';
-    request.fields.addAll(fields);
-    if (imageFile != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath('image', imageFile.path),
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/products/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(productData),
       );
+
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Failed to create product: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Failed to create product: $e');
     }
-    return await request.send();
   }
 
-  static Future<http.Response> deleteProduct(int id, String token) async {
-    return await http.delete(
-      Uri.parse('$baseUrl/products/$id'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
+  static Future<bool> updateProduct(
+    int id,
+    Map<String, dynamic> productData,
+    String token,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/products/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(productData),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception('Failed to update product');
+      }
+    } catch (e) {
+      throw Exception('Failed to update product: $e');
+    }
+  }
+
+  static Future<bool> deleteProduct(int id, String token) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/products/$id'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception('Failed to delete product');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete product: $e');
+    }
   }
 }
