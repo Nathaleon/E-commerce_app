@@ -22,6 +22,7 @@ class AuthController {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('access_token', token);
       await prefs.setString('username', username);
+      await prefs.setString('password', password);
 
       // Decode token untuk ambil role (opsional disimpan)
       final decoded = JwtDecoder.decode(token);
@@ -78,6 +79,7 @@ class AuthController {
     await prefs.remove('access_token');
     await prefs.remove('username');
     await prefs.remove('role');
+    await prefs.remove('password');
 
     Navigator.pushAndRemoveUntil(
       context,

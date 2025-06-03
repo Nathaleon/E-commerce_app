@@ -6,6 +6,7 @@ import 'package:projectakhir_mobile/models/product_model.dart';
 import 'package:projectakhir_mobile/secrets/user_secrets.dart';
 
 class ProductService {
+  static const String baseUrl = secretBaseUrl;
   static Future<List<Product>> getAllProducts() async {
     final response = await http.get(Uri.parse('$baseUrl/api/products/'));
     if (response.statusCode == 200) {

@@ -8,7 +8,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('access_token');
+  print('Token: $token');
   final username = prefs.getString('username');
+  final password = prefs.getString('password');
   String? role;
 
   if (token != null) {
@@ -16,15 +18,16 @@ void main() async {
     role = decoded['role'];
   }
 
-  runApp(MyApp(token: token, username: username, role: role));
+  runApp(MyApp(token: token, username: username, role: role, password: password));
 }
 
 class MyApp extends StatelessWidget {
   final String? token;
   final String? username;
   final String? role;
+  final String? password;
 
-  const MyApp({super.key, this.token, this.username, this.role});
+  const MyApp({super.key, this.token, this.username, this.role, this.password});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +38,7 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      home: BasePage(token: token, username: username, role: role),
+      home: BasePage(token: token, username: username, role: role, password: password),
       routes: {
         '/login': (context) => const LoginPage(),
       },

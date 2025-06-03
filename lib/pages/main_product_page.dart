@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:projectakhir_mobile/controllers/auth_controller.dart';
+// import 'package:projectakhir_mobile/controllers/auth_controller.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
 import 'package:projectakhir_mobile/models/product_model.dart';
-import 'package:projectakhir_mobile/pages/cart_page.dart';
+// import 'package:projectakhir_mobile/pages/cart_page.dart';
 import 'package:projectakhir_mobile/pages/detail_page.dart';
 import 'package:projectakhir_mobile/pages/login_page.dart';
-import 'package:projectakhir_mobile/pages/profile_page.dart';
+// import 'package:projectakhir_mobile/pages/profile_page.dart';
 import 'package:projectakhir_mobile/services/cart_service.dart';
 import 'package:projectakhir_mobile/services/product_service.dart';
 
@@ -14,8 +14,9 @@ class MainProductPage extends StatefulWidget {
   final String? token;
   final String? username;
   final String? role;
+  final VoidCallback? onCartUpdated; 
 
-  const MainProductPage({super.key, this.token, this.username, this.role});
+  const MainProductPage({super.key, this.token, this.username, this.role, this.onCartUpdated});
 
   @override
   State<MainProductPage> createState() => _MainProductPageState();
@@ -33,13 +34,20 @@ class _MainProductPageState extends State<MainProductPage> {
   void initState() {
     super.initState();
     products = ProductService.getAllProducts();
-    CartService.loadCart();
+    CartService.getCartItems(widget.token ?? '').then((items) {
+      if (mounted) {
+        setState(() {
+          // Update UI or state if needed
+        });
+      }
+    });
 
     if (widget.role != null) {
       userRole = widget.role;
     } else if (widget.token != null) {
       final decoded = JwtDecoder.decode(widget.token!);
       userRole = decoded['role'];
+      print('User Role: $userRole');
     }
   }
 
@@ -70,29 +78,32 @@ class _MainProductPageState extends State<MainProductPage> {
   }
 
   void addToCart(Product product) async {
-    if (widget.token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login to add to cart")),
-      );
-      return;
-    }
-
-    final cartItem = CartItem(
-      id: DateTime.now().millisecondsSinceEpoch,
-      productId: product.id,
-      productName: product.name,
-      imageUrl: product.imageUrl,
-      price: double.parse(product.price),
+  if (widget.token == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please login to add to cart")),
     );
-
-    await CartService.addToCart(cartItem);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product added to cart")),
-      );
-    }
+    return;
   }
+
+  final cartItem = CartItem(
+    id: DateTime.now().millisecondsSinceEpoch,
+    productId: product.id,
+    productName: product.name,
+    imageUrl: product.imageUrl,
+    price: double.parse(product.price),
+    quantity: product.stock > 0 ? 1 : 0, // Set quantity to 1 if stock is available
+  );
+
+  await CartService.addToCart(cartItem, widget.token!);
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Product added to cart")),
+    );
+  }
+
+  widget.onCartUpdated?.call(); 
+}
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +126,12 @@ class _MainProductPageState extends State<MainProductPage> {
               },
               child: const Text("Login", style: TextStyle(color: Colors.black)),
             ),
+          if (isLoggedIn)
+          Text(
+            widget.username ?? 'User',
+            style: const TextStyle(color: Colors.black),
+          ),
+          //logout
         ],
       ),
       body: Column(
@@ -262,7 +279,8 @@ class _MainProductPageState extends State<MainProductPage> {
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
-                                  ProductDetailPage(product: product),
+                                  ProductDetailPage(product: product,onCartUpdated: widget.onCartUpdated,token: widget.token
+                                  ),
                             ),
                           );
                         },

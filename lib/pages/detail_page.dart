@@ -1,34 +1,124 @@
 import 'package:flutter/material.dart';
+import 'package:projectakhir_mobile/models/cart_item_model.dart';
 import 'package:projectakhir_mobile/models/product_model.dart';
+import 'package:projectakhir_mobile/services/cart_service.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Product product;
+  final VoidCallback? onCartUpdated;
+  final String? token;
 
-  const ProductDetailPage({super.key, required this.product});
+  const ProductDetailPage({
+    super.key,
+    required this.product,
+    this.onCartUpdated,
+    this.token,
+  });
+
+  void _addToCart(BuildContext context) async {
+    final cartItem = CartItem(
+      id: DateTime.now().millisecondsSinceEpoch,
+      productId: product.id,
+      productName: product.name,
+      imageUrl: product.imageUrl,
+      price: double.parse(product.price),
+      quantity: product.stock > 0 ? 1 : 0,
+    );
+
+    await CartService.addToCart(cartItem, token!);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to cart')),
+      );
+    }
+
+    onCartUpdated?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(product.name)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (product.imageUrl.isNotEmpty)
-              Image.network(product.imageUrl)
-            else
-              const FlutterLogo(size: 100),
-            const SizedBox(height: 16),
-            Text("Harga: Rp${product.price}", style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text("Stok: ${product.stock}", style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 8),
-            Text("Kategori: ${product.category}", style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 8),
-            Text("Deskripsi:", style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(product.description),
-          ],
+      appBar: AppBar(
+        title: Text(product.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              // optional: navigate to cart page
+            },
+          ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        color: Colors.white,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.add_shopping_cart),
+          label: const Text("Add to Cart"),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle: const TextStyle(fontSize: 18),
+          ),
+          onPressed: () => _addToCart(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 1,
+                child: product.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                      )
+                    : const Center(child: FlutterLogo(size: 100)),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "Rp${product.price}",
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.inventory, color: Colors.grey[600], size: 20),
+                  const SizedBox(width: 8),
+                  Text("Stok: ${product.stock}",
+                      style: const TextStyle(fontSize: 16)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.category, color: Colors.grey[600], size: 20),
+                  const SizedBox(width: 8),
+                  Text("Kategori: ${product.category}",
+                      style: const TextStyle(fontSize: 16)),
+                ],
+              ),
+              const Divider(height: 32),
+              const Text("Deskripsi",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                product.description,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
         ),
       ),
     );

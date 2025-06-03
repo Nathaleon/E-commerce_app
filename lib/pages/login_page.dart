@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectakhir_mobile/controllers/auth_controller.dart';
+import 'package:projectakhir_mobile/pages/base_page.dart';
 import 'package:projectakhir_mobile/pages/main_product_page.dart';
 import 'package:projectakhir_mobile/pages/register_page.dart';
 
@@ -36,8 +37,8 @@ class _LoginPageState extends State<LoginPage> {
             isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
-                    onPressed: () {
-                      AuthController.login(
+                    onPressed: () async {
+                      await AuthController.login(
                         context: context,
                         username: usernameController.text,
                         password: passwordController.text,
@@ -47,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => MainProductPage(
+                              builder: (_) => BasePage(
                                 token: token,
                                 username: username,
                                 // role bisa diambil dari SharedPreferences di main

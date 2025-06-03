@@ -4,6 +4,7 @@ import 'package:projectakhir_mobile/models/user_model.dart';
 import 'package:projectakhir_mobile/secrets/user_secrets.dart';
 
 class UserService {
+  static const String baseUrl = secretBaseUrl;
   static Future<http.Response> register(Map<String, dynamic> data) async {
     return await http.post(
       Uri.parse('$baseUrl/api/users/register'),
@@ -41,7 +42,7 @@ class UserService {
     String token,
   ) async {
     return await http.put(
-      Uri.parse('$baseUrl/users/$id'),
+      Uri.parse('$baseUrl/api/users/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

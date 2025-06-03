@@ -1,5 +1,5 @@
 class CartItem {
-  final int id;
+  final int id; // Order ID dari backend
   final int productId;
   final String productName;
   final String imageUrl;
@@ -12,16 +12,29 @@ class CartItem {
     required this.productName,
     required this.imageUrl,
     required this.price,
-    this.quantity = 1,
+    required this.quantity,
   });
 
   double get total => price * quantity;
 
+  /// Untuk mengirim order baru ke backend
   Map<String, dynamic> toJson() {
     return {
       'product_id': productId,
       'quantity': quantity,
       'total_price': total,
     };
+  }
+
+  /// Untuk parsing dari response GET /api/orders/user/:userId
+  factory CartItem.fromJson(Map<String, dynamic> json) {
+    return CartItem(
+      id: json['id'],
+      productId: json['product_id'],
+      productName: json['product_name'] ?? 'Unknown Product',
+      imageUrl: json['image_url'] ?? '',
+        price: double.tryParse(json['total_price'].toString()) ?? 0.0,
+      quantity: json['quantity'] ?? 1,
+    );
   }
 }

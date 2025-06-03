@@ -8,12 +8,14 @@ class BasePage extends StatefulWidget {
   final String? token;
   final String? username;
   final String? role;
+  final String? password; 
 
   const BasePage({
     super.key,
     this.token,
     this.username,
     this.role,
+    this.password,
   });
 
   @override
@@ -22,34 +24,49 @@ class BasePage extends StatefulWidget {
 
 class _BasePageState extends State<BasePage> {
   int _selectedIndex = 0;
-  late List<Widget> _pages;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializePages();
+ final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
+
+  void _onCheckoutSuccess() {
+    setState(() {
+      _selectedIndex = 3; // pindah ke Profile tab
+    });
+
+    // ⏳ beri delay kecil agar profil benar-benar aktif dulu
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _profileKey.currentState?.refreshOrderHistory();
+    });
   }
 
-  void _initializePages() {
-    _pages = [
-      MainProductPage(
-        token: widget.token,
-        username: widget.username,
-        role: widget.role,
-      ),
-      CartPage(token: widget.token),
-      AddProductPage(token: widget.token),
-      ProfilePage(
-        token: widget.token,
-        username: widget.username,
-      ),
-    ];
+
+  
+  void _onCartUpdated() {
+    setState(() {}); // Trigger rebuild, CartService sudah global
   }
+
+  List<Widget> _buildPages() => [
+        MainProductPage(
+          token: widget.token,
+          username: widget.username,
+          role: widget.role,
+          onCartUpdated: _onCartUpdated,
+        ),
+        CartPage(
+          token: widget.token,
+          onCheckoutDone: _onCheckoutSuccess,
+        ),
+        AddProductPage(token: widget.token),
+        ProfilePage(
+          token: widget.token,
+          username: widget.username,
+          password: widget.password,
+          key: _profileKey,
+        ),
+      ];
 
   void _onItemTapped(int index) {
     if (!mounted) return;
 
-    // Jika user bukan admin dan mencoba mengakses Add Product
     if (widget.role != 'admin' && index == 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Only admin can access this feature")),
@@ -57,7 +74,6 @@ class _BasePageState extends State<BasePage> {
       return;
     }
 
-    // Jika belum login dan mencoba mengakses fitur selain Home
     if (widget.token == null && index != 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please login first")),
@@ -65,36 +81,24 @@ class _BasePageState extends State<BasePage> {
       return;
     }
 
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final pages = _buildPages(); // Rebuild all pages as needed
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _pages,
+        children: pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle),
-            label: 'Add Product',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'Add Product'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,

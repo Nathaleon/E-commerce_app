@@ -1,5 +1,7 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:projectakhir_mobile/secrets/user_secrets.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
 
 class CartService {
@@ -48,6 +50,9 @@ class CartService {
         )
         .toList();
     await prefs.setString(_cartKey, json.encode(cartList));
+
+    // Notify listeners if using a state management solution
+    await loadCart();
   }
 
   static Future<void> addToCart(CartItem item) async {

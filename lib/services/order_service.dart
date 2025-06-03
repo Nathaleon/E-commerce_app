@@ -6,7 +6,7 @@ import 'package:projectakhir_mobile/models/order_history_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OrderService {
-  static const String baseUrl = 'http://localhost:3000/api';
+  static const String baseUrl = secretBaseUrl;
   static const String _orderHistoryKey = 'order_history';
 
   static Future<List<Order>> getOrders(String token) async {
