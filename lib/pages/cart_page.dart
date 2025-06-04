@@ -15,7 +15,7 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   bool isLoading = true;
- Set<int> selectedProductIds = {};
+  Set<int> selectedProductIds = {};
   @override
   void initState() {
     super.initState();
@@ -38,7 +38,8 @@ class _CartPageState extends State<CartPage> {
         .where((item) => selectedProductIds.contains(item.productId))
         .fold(0.0, (sum, item) => sum + item.total);
   }
-Future<void> _checkout() async {
+
+  Future<void> _checkout() async {
     try {
       final selectedItems = CartService.items
           .where((item) => selectedProductIds.contains(item.productId))
@@ -113,17 +114,32 @@ Future<void> _checkout() async {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : items.isEmpty
-              ? const Center(
-                  child: Text(
-                    'Your cart is empty',
-                    style: TextStyle(fontSize: 18),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/emptycart.png',
+                        width: 200,
+                        height: 200,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Your cart is empty',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 )
               : ListView.builder(
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    final isSelected = selectedProductIds.contains(item.productId);
+                    final isSelected =
+                        selectedProductIds.contains(item.productId);
                     return Card(
                       margin: const EdgeInsets.all(8),
                       child: Padding(
@@ -181,7 +197,8 @@ Future<void> _checkout() async {
                                   icon: const Icon(Icons.remove),
                                   onPressed: () => _updateQuantity(item, -1),
                                 ),
-                                Text('${item.quantity}', style: const TextStyle(fontSize: 16)),
+                                Text('${item.quantity}',
+                                    style: const TextStyle(fontSize: 16)),
                                 IconButton(
                                   icon: const Icon(Icons.add),
                                   onPressed: () => _updateQuantity(item, 1),
@@ -191,7 +208,8 @@ Future<void> _checkout() async {
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () async {
-                                await CartService.removeFromCart(item.productId);
+                                await CartService.removeFromCart(
+                                    item.productId);
                                 setState(() {
                                   selectedProductIds.remove(item.productId);
                                 });
@@ -203,7 +221,7 @@ Future<void> _checkout() async {
                     );
                   },
                 ),
-      bottomNavigationBar: items.isEmpty
+      bottomNavigationBar: items.isEmpty || selectedProductIds.isEmpty
           ? null
           : Container(
               padding: const EdgeInsets.all(16),
@@ -225,23 +243,43 @@ Future<void> _checkout() async {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Selected Total:', style: TextStyle(fontSize: 16)),
+                      const Text(
+                        'Total:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
                       Text(
                         'Rp ${selectedTotal.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: Colors.black,
                         ),
                       ),
                     ],
                   ),
-                  ElevatedButton(
-                    onPressed: _checkout,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  SizedBox(
+                    width: 150,
+                    height: 45,
+                    child: ElevatedButton(
+                      onPressed: _checkout,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Checkout',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    child: const Text('Checkout', style: TextStyle(fontSize: 18)),
                   ),
                 ],
               ),

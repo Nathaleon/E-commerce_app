@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:projectakhir_mobile/pages/base_page.dart';
 import 'package:projectakhir_mobile/pages/login_page.dart';
+import 'package:projectakhir_mobile/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +19,8 @@ void main() async {
     role = decoded['role'];
   }
 
-  runApp(MyApp(token: token, username: username, role: role, password: password));
+  runApp(
+      MyApp(token: token, username: username, role: role, password: password));
 }
 
 class MyApp extends StatelessWidget {
@@ -32,13 +34,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'E-Commerce App',
+      title: 'E-commerce',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      home: BasePage(token: token, username: username, role: role, password: password),
+      home: const BasePage(),
       routes: {
         '/login': (context) => const LoginPage(),
       },

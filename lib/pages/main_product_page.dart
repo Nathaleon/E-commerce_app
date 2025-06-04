@@ -14,9 +14,10 @@ class MainProductPage extends StatefulWidget {
   final String? token;
   final String? username;
   final String? role;
-  final VoidCallback? onCartUpdated; 
+  final VoidCallback? onCartUpdated;
 
-  const MainProductPage({super.key, this.token, this.username, this.role, this.onCartUpdated});
+  const MainProductPage(
+      {super.key, this.token, this.username, this.role, this.onCartUpdated});
 
   @override
   State<MainProductPage> createState() => _MainProductPageState();
@@ -72,32 +73,33 @@ class _MainProductPageState extends State<MainProductPage> {
   }
 
   void addToCart(Product product) async {
-  if (widget.token == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please login to add to cart")),
+    if (widget.token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to add to cart")),
+      );
+      return;
+    }
+
+    final cartItem = CartItem(
+      id: DateTime.now().millisecondsSinceEpoch,
+      productId: product.id,
+      productName: product.name,
+      imageUrl: product.imageUrl,
+      price: double.parse(product.price),
+      quantity:
+          product.stock > 0 ? 1 : 0, // Set quantity to 1 if stock is available
     );
-    return;
+
+    await CartService.addToCart(cartItem);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Product added to cart")),
+      );
+    }
+
+    widget.onCartUpdated?.call();
   }
-
-  final cartItem = CartItem(
-    id: DateTime.now().millisecondsSinceEpoch,
-    productId: product.id,
-    productName: product.name,
-    imageUrl: product.imageUrl,
-    price: double.parse(product.price),
-    quantity: product.stock > 0 ? 1 : 0, // Set quantity to 1 if stock is available
-  );
-
-  await CartService.addToCart(cartItem);
-
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Product added to cart")),
-    );
-  }
-
-  widget.onCartUpdated?.call(); 
-}
 
   @override
   Widget build(BuildContext context) {
@@ -105,9 +107,25 @@ class _MainProductPageState extends State<MainProductPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/Logo2.png',
-          height: 40,
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/Logo.png',
+              height: 60,
+              fit: BoxFit.contain,
+            ),
+            if (isLoggedIn) ...[
+              const SizedBox(width: 12),
+              Text(
+                'Welcome, ${widget.username ?? 'User'}',
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           if (!isLoggedIn)
@@ -120,12 +138,6 @@ class _MainProductPageState extends State<MainProductPage> {
               },
               child: const Text("Login", style: TextStyle(color: Colors.black)),
             ),
-          if (isLoggedIn)
-          Text(
-            widget.username ?? 'User',
-            style: const TextStyle(color: Colors.black),
-          ),
-          //logout
         ],
       ),
       body: Column(
@@ -256,7 +268,7 @@ class _MainProductPageState extends State<MainProductPage> {
                   itemCount: items.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.65,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
@@ -265,102 +277,77 @@ class _MainProductPageState extends State<MainProductPage> {
                     return Card(
                       elevation: 4,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: InkWell(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetailPage(product: product,onCartUpdated: widget.onCartUpdated,token: widget.token
-                                  ),
+                              builder: (_) => ProductDetailPage(
+                                product: product,
+                                onCartUpdated: widget.onCartUpdated,
+                                token: widget.token,
+                              ),
                             ),
                           );
                         },
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              flex: 3,
                               child: ClipRRect(
                                 borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(16),
+                                  top: Radius.circular(12),
                                 ),
                                 child: Image.network(
-                                  product.imageUrl.isNotEmpty
-                                      ? product.imageUrl
-                                      : 'https://th.bing.com/th/id/OIP.FPIFJ6xedtnTAxk0T7AKhwHaF9?rs=1&pid=ImgDetMain',
+                                  product.imageUrl,
                                   fit: BoxFit.cover,
+                                  width: double.infinity,
                                 ),
                               ),
                             ),
-                            Expanded(
-                              flex: 2,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      product.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Rp ${product.price}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: TextButton.icon(
+                                      onPressed: () => addToCart(product),
+                                      icon: const Icon(Icons.shopping_cart,
+                                          color: Colors.green),
+                                      label: const Text(
+                                        'Add to Cart',
+                                        style: TextStyle(color: Colors.green),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Rp ${product.price}",
-                                      style: const TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
                                       ),
                                     ),
-                                    const Spacer(),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        InkWell(
-                                          onTap: () => addToCart(product),
-                                          child: const Icon(
-                                            Icons.shopping_cart_outlined,
-                                            color: Colors.blue,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        if (userRole == "admin") ...[
-                                          const SizedBox(width: 8),
-                                          InkWell(
-                                            onTap: () {
-                                              // TODO: Navigate to edit page
-                                            },
-                                            child: const Icon(
-                                              Icons.edit,
-                                              color: Colors.orange,
-                                              size: 20,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          InkWell(
-                                            onTap: () {
-                                              // TODO: Handle product deletion
-                                            },
-                                            child: const Icon(
-                                              Icons.delete,
-                                              color: Colors.red,
-                                              size: 20,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

@@ -8,7 +8,7 @@ class BasePage extends StatefulWidget {
   final String? token;
   final String? username;
   final String? role;
-  final String? password; 
+  final String? password;
 
   const BasePage({
     super.key,
@@ -25,7 +25,7 @@ class BasePage extends StatefulWidget {
 class _BasePageState extends State<BasePage> {
   int _selectedIndex = 0;
 
- final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
+  final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
 
   void _onCheckoutSuccess() {
     setState(() {
@@ -38,8 +38,6 @@ class _BasePageState extends State<BasePage> {
     });
   }
 
-
-  
   void _onCartUpdated() {
     setState(() {}); // Trigger rebuild, CartService sudah global
   }
@@ -96,12 +94,14 @@ class _BasePageState extends State<BasePage> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'Add Product'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart), label: 'Cart'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle), label: 'Add Product'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         onTap: _onItemTapped,

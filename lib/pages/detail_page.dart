@@ -53,14 +53,26 @@ class ProductDetailPage extends StatelessWidget {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         color: Colors.white,
-        child: ElevatedButton.icon(
-          icon: const Icon(Icons.add_shopping_cart),
-          label: const Text("Add to Cart"),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: const TextStyle(fontSize: 18),
+        child: SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: token == null ? null : () => _addToCart(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Add to Cart',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-          onPressed: () => _addToCart(context),
         ),
       ),
       body: SingleChildScrollView(
@@ -84,11 +96,19 @@ class ProductDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                "Rp${product.price}",
+                'Rp ${product.price}',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                product.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.black87,
                 ),
               ),
               const SizedBox(height: 12),
