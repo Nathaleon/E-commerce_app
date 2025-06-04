@@ -4,10 +4,17 @@ import 'package:projectakhir_mobile/models/order_model.dart';
 import 'package:projectakhir_mobile/secrets/user_secrets.dart';
 import 'package:projectakhir_mobile/models/order_history_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class OrderService {
   static const String baseUrl = secretBaseUrl;
-  static const String _orderHistoryKey = 'order_history';
+  static const String _orderHistoryKeyPrefix = 'order_history_';
+
+  // Helper method to get user-specific storage key
+  static String _getUserOrderHistoryKey(String token) {
+    final userId = JwtDecoder.decode(token)['id'];
+    return '${_orderHistoryKeyPrefix}$userId';
+  }
 
   static Future<List<Order>> getOrders(String token) async {
     final response = await http.get(
@@ -40,27 +47,33 @@ class OrderService {
     Map<String, dynamic> orderData,
     String token,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? historyJson = prefs.getString(_orderHistoryKey);
-    List<Map<String, dynamic>> orders = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storageKey = _getUserOrderHistoryKey(token);
+      final String? historyJson = prefs.getString(storageKey);
+      List<Map<String, dynamic>> orders = [];
 
-    if (historyJson != null) {
-      orders = List<Map<String, dynamic>>.from(json.decode(historyJson));
+      if (historyJson != null) {
+        orders = List<Map<String, dynamic>>.from(json.decode(historyJson));
+      }
+
+      final newOrder = {
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'product_id': orderData['product_id'],
+        'product_name': orderData['product_name'] ?? 'Unknown Product',
+        'image_url': orderData['image_url'] ?? '',
+        'quantity': orderData['quantity'],
+        'total_price': orderData['total_price'],
+        'status': 'completed',
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      orders.add(newOrder);
+      await prefs.setString(storageKey, json.encode(orders));
+    } catch (e) {
+      print('Error creating order history: $e');
+      throw Exception('Failed to create order history: $e');
     }
-
-    final newOrder = {
-      'id': DateTime.now().millisecondsSinceEpoch,
-      'product_id': orderData['product_id'],
-      'product_name': orderData['product_name'] ?? 'Unknown Product',
-      'image_url': orderData['image_url'] ?? '',
-      'quantity': orderData['quantity'],
-      'total_price': orderData['total_price'],
-      'status': 'completed',
-      'created_at': DateTime.now().toIso8601String(),
-    };
-
-    orders.add(newOrder);
-    await prefs.setString(_orderHistoryKey, json.encode(orders));
   }
 
   static Future<void> updateOrder(
@@ -83,15 +96,21 @@ class OrderService {
   }
 
   static Future<void> deleteOrder(int orderId, String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? historyJson = prefs.getString(_orderHistoryKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storageKey = _getUserOrderHistoryKey(token);
+      final String? historyJson = prefs.getString(storageKey);
 
-    if (historyJson != null) {
-      List<Map<String, dynamic>> orders = List<Map<String, dynamic>>.from(
-        json.decode(historyJson),
-      );
-      orders.removeWhere((order) => order['id'] == orderId);
-      await prefs.setString(_orderHistoryKey, json.encode(orders));
+      if (historyJson != null) {
+        List<Map<String, dynamic>> orders = List<Map<String, dynamic>>.from(
+          json.decode(historyJson),
+        );
+        orders.removeWhere((order) => order['id'] == orderId);
+        await prefs.setString(storageKey, json.encode(orders));
+      }
+    } catch (e) {
+      print('Error deleting order: $e');
+      throw Exception('Failed to delete order: $e');
     }
   }
 
@@ -149,28 +168,41 @@ class OrderService {
   }
 
   static Future<List<OrderHistory>> getOrderHistory(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? historyJson = prefs.getString(_orderHistoryKey);
-    if (historyJson != null) {
-      final List<dynamic> decodedList = json.decode(historyJson);
-      return decodedList
-          .map((item) => OrderHistory(
-                id: item['id'],
-                productId: item['product_id'],
-                productName: item['product_name'],
-                imageUrl: item['image_url'],
-                quantity: item['quantity'],
-                totalPrice: item['total_price'].toDouble(),
-                status: item['status'],
-                createdAt: DateTime.parse(item['created_at']),
-              ))
-          .toList();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storageKey = _getUserOrderHistoryKey(token);
+      final String? historyJson = prefs.getString(storageKey);
+
+      if (historyJson != null && historyJson.isNotEmpty) {
+        final List<dynamic> decodedList = json.decode(historyJson);
+        return decodedList
+            .map((item) => OrderHistory(
+                  id: item['id'],
+                  productId: item['product_id'],
+                  productName: item['product_name'],
+                  imageUrl: item['image_url'] ?? '',
+                  quantity: item['quantity'],
+                  totalPrice: double.parse(item['total_price'].toString()),
+                  status: item['status'],
+                  createdAt: DateTime.parse(item['created_at']),
+                ))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting order history: $e');
+      return [];
     }
-    return [];
   }
 
   static Future<void> clearAllOrders(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_orderHistoryKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storageKey = _getUserOrderHistoryKey(token);
+      await prefs.remove(storageKey);
+    } catch (e) {
+      print('Error clearing orders: $e');
+      throw Exception('Failed to clear orders: $e');
+    }
   }
 }

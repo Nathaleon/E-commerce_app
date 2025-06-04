@@ -135,4 +135,56 @@ class ProductService {
       throw Exception('Failed to delete product: $e');
     }
   }
+
+  static Future<bool> updateStock(
+      int productId, int newStock, String token) async {
+    try {
+      if (newStock < 0) {
+        throw Exception('Stock cannot be negative');
+      }
+
+      // Get current product first to preserve other fields
+      final currentProduct = await getProductById(productId);
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/products/$productId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': currentProduct.name,
+          'price': currentProduct.price,
+          'stock': newStock,
+          'description': currentProduct.description,
+          'category': currentProduct.category,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        // Parse error message from response if available
+        String errorMessage = 'Failed to update stock';
+        try {
+          final errorBody = json.decode(response.body);
+          errorMessage = errorBody['message'] ?? errorMessage;
+        } catch (_) {}
+        throw Exception(
+            'Stock update failed: $errorMessage (Status: ${response.statusCode})');
+      }
+    } catch (e) {
+      print('Error updating stock: $e');
+      throw Exception('Failed to update stock: $e');
+    }
+  }
+
+  static Future<int> getProductStock(int productId) async {
+    try {
+      final product = await getProductById(productId);
+      return product.stock;
+    } catch (e) {
+      throw Exception('Failed to get product stock: $e');
+    }
+  }
 }

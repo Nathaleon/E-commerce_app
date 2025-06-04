@@ -16,24 +16,38 @@ class ProductDetailPage extends StatelessWidget {
   });
 
   void _addToCart(BuildContext context) async {
-    final cartItem = CartItem(
-      id: DateTime.now().millisecondsSinceEpoch,
-      productId: product.id,
-      productName: product.name,
-      imageUrl: product.imageUrl,
-      price: double.parse(product.price),
-      quantity: product.stock > 0 ? 1 : 0,
-    );
-
-    await CartService.addToCart(cartItem, token!);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Added to cart')),
+    try {
+      final cartItem = CartItem(
+        id: DateTime.now().millisecondsSinceEpoch,
+        productId: product.id,
+        productName: product.name,
+        imageUrl: product.imageUrl,
+        price: double.parse(product.price),
+        quantity: 1, // Always start with quantity 1
       );
-    }
 
-    onCartUpdated?.call();
+      await CartService.addToCart(cartItem, token!);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Added to cart'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        onCartUpdated?.call();
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override

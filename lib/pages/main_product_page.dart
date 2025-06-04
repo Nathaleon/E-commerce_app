@@ -41,7 +41,6 @@ class _MainProductPageState extends State<MainProductPage> {
     print('Loading products... $products');
     //loop the products
 
-
     if (widget.role != null) {
       userRole = widget.role;
     }
@@ -95,30 +94,46 @@ class _MainProductPageState extends State<MainProductPage> {
   void addToCart(Product product) async {
     if (widget.token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login to add to cart")),
+        const SnackBar(
+          content: Text("Please login to add to cart"),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
-    final cartItem = CartItem(
-      id: DateTime.now().millisecondsSinceEpoch,
-      productId: product.id,
-      productName: product.name,
-      imageUrl: product.imageUrl,
-      price: double.parse(product.price),
-      quantity:
-          product.stock > 0 ? 1 : 0, // Set quantity to 1 if stock is available
-    );
-
-    await CartService.addToCart(cartItem, widget.token!);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product added to cart")),
+    try {
+      final cartItem = CartItem(
+        id: DateTime.now().millisecondsSinceEpoch,
+        productId: product.id,
+        productName: product.name,
+        imageUrl: product.imageUrl,
+        price: double.parse(product.price),
+        quantity: 1, // Always start with quantity 1
       );
-    }
 
-    widget.onCartUpdated?.call();
+      await CartService.addToCart(cartItem, widget.token!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Product added to cart"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        widget.onCartUpdated?.call();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -254,156 +269,167 @@ class _MainProductPageState extends State<MainProductPage> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<Product>>(
-              future: products,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No products found."));
-                }
+            child: RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  products = ProductService.getAllProducts();
+                });
+              },
+              child: FutureBuilder<List<Product>>(
+                future: products,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("Error: ${snapshot.error}"));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text("No products found."));
+                  }
 
-                final items = List<Product>.from(snapshot.data!);
-                _applyFilters(items);
+                  final items = List<Product>.from(snapshot.data!);
+                  _applyFilters(items);
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.65,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                  ),
-                  itemBuilder: (context, index) {
-                    final product = items[index];
-                    return Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailPage(
-                                product: product,
-                                onCartUpdated: widget.onCartUpdated,
-                                token: widget.token,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(12),
-                                ),
-                                child: Image.network(
-                                  product.imageUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: items.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.65,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      final product = items[index];
+                      return Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProductDetailPage(
+                                  product: product,
+                                  onCartUpdated: widget.onCartUpdated,
+                                  token: widget.token,
                                 ),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                            );
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Rp ${product.price}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
+                                  child: Image.network(
+                                    product.imageUrl,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
                                   ),
-                                  const SizedBox(height: 8),
-                                  if (widget.role == 'admin') ...[
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit,
-                                              color: Colors.blue),
-                                          onPressed: () {
-                                            //go to edit product page
-                                            Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      EditProductPage(
-                                                    productId: product.id,
-                                                    name: product.name,
-                                                    price: product.price,
-                                                    stock: product.stock
-                                                        .toString(),
-                                                    description:
-                                                        product.description,
-                                                    category: product.category,
-                                                    imageUrl: product.imageUrl,
-                                                    token: widget.token,
-                                                  ),
-                                                ));
-                                          },
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete,
-                                              color: Colors.red),
-                                          onPressed: () {
-                                            deleteProduct(product
-                                                .id); // Call delete method
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ] else ...[
-                                    // Add to Cart Button for non-admin
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: TextButton.icon(
-                                        onPressed: () => addToCart(product),
-                                        icon: const Icon(Icons.shopping_cart,
-                                            color: Colors.green),
-                                        label: const Text(
-                                          'Add to Cart',
-                                          style: TextStyle(color: Colors.green),
-                                        ),
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 4),
-                                        ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  ]
-                                ],
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Rp ${product.price}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (widget.role == 'admin') ...[
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                color: Colors.blue),
+                                            onPressed: () {
+                                              //go to edit product page
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        EditProductPage(
+                                                      productId: product.id,
+                                                      name: product.name,
+                                                      price: product.price,
+                                                      stock: product.stock
+                                                          .toString(),
+                                                      description:
+                                                          product.description,
+                                                      category:
+                                                          product.category,
+                                                      imageUrl:
+                                                          product.imageUrl,
+                                                      token: widget.token,
+                                                    ),
+                                                  ));
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                color: Colors.red),
+                                            onPressed: () {
+                                              deleteProduct(product
+                                                  .id); // Call delete method
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ] else ...[
+                                      // Add to Cart Button for non-admin
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: TextButton.icon(
+                                          onPressed: () => addToCart(product),
+                                          icon: const Icon(Icons.shopping_cart,
+                                              color: Colors.green),
+                                          label: const Text(
+                                            'Add to Cart',
+                                            style:
+                                                TextStyle(color: Colors.green),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 4),
+                                          ),
+                                        ),
+                                      ),
+                                    ]
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

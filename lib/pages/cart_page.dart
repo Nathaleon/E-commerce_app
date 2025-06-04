@@ -14,7 +14,7 @@ class CartPage extends StatefulWidget {
 
 class CartPageState extends State<CartPage> {
   bool isLoading = true;
-  Set<int> selectedProductIds = {};
+  Set<int> selectedOrderIds = {};
   List<CartItem> items = [];
 
   @override
@@ -35,7 +35,7 @@ class CartPageState extends State<CartPage> {
     setState(() => isLoading = true);
     try {
       items = await CartService.getCartItems(widget.token!);
-      selectedProductIds = items.map((e) => e.id).toSet(); // pakai id order
+      selectedOrderIds.clear();
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -47,47 +47,42 @@ class CartPageState extends State<CartPage> {
   }
 
   Future<void> _updateQuantity(CartItem item, int delta) async {
-  final newQuantity = item.quantity + delta;
+    final newQuantity = item.quantity + delta;
 
-  try {
-    if (newQuantity <= 0) {
-      await CartService.deleteOrder(item.id, widget.token!);
-      setState(() {
-        items.removeWhere((e) => e.id == item.id);
-        selectedProductIds.remove(item.productId);
-      });
-    } else {
-      // final totalPrice = item.price * newQuantity;
-      await CartService.updateQuantity(
-        item.id,
-        newQuantity,
-        widget.token!,
-        item.price
-      );
-      setState(() {
-        item.quantity = newQuantity;
-        // total dihitung lewat getter
-      });
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update cart: $e")),
-      );
+    try {
+      if (newQuantity <= 0) {
+        await CartService.deleteOrder(item.id, widget.token!);
+        setState(() {
+          items.removeWhere((e) => e.id == item.id);
+          selectedOrderIds.remove(item.id);
+        });
+      } else {
+        // final totalPrice = item.price * newQuantity;
+        await CartService.updateQuantity(
+            item.id, newQuantity, widget.token!, item.price);
+        setState(() {
+          item.quantity = newQuantity;
+          // total dihitung lewat getter
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to update cart: $e")),
+        );
+      }
     }
   }
-}
-
 
   double get selectedTotal {
     return items
-        .where((item) => selectedProductIds.contains(item.productId))
+        .where((item) => selectedOrderIds.contains(item.id))
         .fold(0.0, (sum, item) => sum + item.total);
   }
 
   Future<void> _checkout() async {
     try {
-      final selectedIds = selectedProductIds.toList();
+      final selectedIds = selectedOrderIds.toList();
 
       if (selectedIds.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +112,7 @@ class CartPageState extends State<CartPage> {
   Future<void> _clearCart() async {
     await CartService.clearCart(widget.token!);
     setState(() {
-      selectedProductIds.clear();
+      selectedOrderIds.clear();
     });
   }
 
@@ -164,8 +159,7 @@ class CartPageState extends State<CartPage> {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    final isSelected =
-                        selectedProductIds.contains(item.productId);
+                    final isSelected = selectedOrderIds.contains(item.id);
                     return Card(
                       margin: const EdgeInsets.all(8),
                       child: Padding(
@@ -177,9 +171,9 @@ class CartPageState extends State<CartPage> {
                               onChanged: (value) {
                                 setState(() {
                                   if (value == true) {
-                                    selectedProductIds.add(item.productId);
+                                    selectedOrderIds.add(item.id);
                                   } else {
-                                    selectedProductIds.remove(item.productId);
+                                    selectedOrderIds.remove(item.id);
                                   }
                                 });
                               },
@@ -247,7 +241,7 @@ class CartPageState extends State<CartPage> {
                     );
                   },
                 ),
-      bottomNavigationBar: items.isEmpty || selectedProductIds.isEmpty
+      bottomNavigationBar: items.isEmpty || selectedOrderIds.isEmpty
           ? null
           : Container(
               padding: const EdgeInsets.all(16),

@@ -31,16 +31,17 @@ class _BasePageState extends State<BasePage> {
   @override
   void initState() {
     super.initState();
-    // Always start with home page
     _selectedIndex = 0;
   }
 
   void _onCheckoutSuccess() {
+    if (!mounted) return;
+
     setState(() {
-      _selectedIndex = 3;
+      _selectedIndex = widget.role == 'admin' ? 3 : 2;
     });
 
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       _profileKey.currentState?.refreshOrderHistory();
     });
   }
@@ -55,6 +56,7 @@ class _BasePageState extends State<BasePage> {
       // If you have a way to reload the products on MainProductPage, call that here.
     });
   }
+
   List<Widget> _buildPages() {
     // Always include MainProductPage as the first page
     final List<Widget> pages = [
@@ -75,7 +77,8 @@ class _BasePageState extends State<BasePage> {
           token: widget.token,
           onCheckoutDone: _onCheckoutSuccess,
         ),
-        if (widget.role == 'admin') AddProductPage(token: widget.token, onProductAdded: _onProductAdded),
+        if (widget.role == 'admin')
+          AddProductPage(token: widget.token, onProductAdded: _onProductAdded),
         ProfilePage(
           token: widget.token,
           username: widget.username,

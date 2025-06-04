@@ -14,7 +14,8 @@ class ProfilePage extends StatefulWidget {
   final String? role;
   final Key? key;
 
-  const ProfilePage({this.token, this.username, this.password, this.role, this.key})
+  const ProfilePage(
+      {this.token, this.username, this.password, this.role, this.key})
       : super(key: key);
 
   @override
@@ -43,11 +44,9 @@ class ProfilePageState extends State<ProfilePage> {
       return;
     } else {
       decodedToken = JwtDecoder.decode(widget.token!);
-      print('Decoded Token: $decodedToken');
       username = widget.username;
       password = widget.password;
       email = decodedToken?['email'];
-      print('password: $password');
 
       if (email == null || email!.isEmpty) {
         email = 'Not provided';
@@ -57,12 +56,19 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> refreshOrderHistory() async {
-    await _loadOrderHistory();
+    if (mounted) {
+      setState(() {
+        orderHistory = OrderService.getOrderHistory(widget.token!);
+      });
+    }
   }
 
   Future<void> _loadOrderHistory() async {
-    orderHistory = OrderService.getOrderHistory(widget.token!);
-    setState(() {});
+    if (mounted) {
+      setState(() {
+        orderHistory = OrderService.getOrderHistory(widget.token!);
+      });
+    }
   }
 
   Future<void> _deleteOrder(int orderId) async {
@@ -158,6 +164,96 @@ class ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Widget _buildOrderHistoryList() {
+    return RefreshIndicator(
+      onRefresh: refreshOrderHistory,
+      child: FutureBuilder<List<OrderHistory>>(
+        future: orderHistory,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/welcome.png',
+                        width: 200,
+                        height: 200,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No order history',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              final order = snapshot.data![index];
+              return Card(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: ListTile(
+                  leading: SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: Image.network(
+                      order.imageUrl.isNotEmpty
+                          ? order.imageUrl
+                          : 'https://th.bing.com/th/id/OIP.FPIFJ6xedtnTAxk0T7AKhwHaF9?rs=1&pid=ImgDetMain',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  title: Text(
+                    order.productName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Quantity: ${order.quantity}'),
+                      Text(
+                        'Total: Rp ${order.totalPrice.toStringAsFixed(2)}',
+                        style: const TextStyle(color: Colors.green),
+                      ),
+                      Text(
+                        'Date: ${order.createdAt.toString().split('.')[0]}',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteOrder(order.id),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,86 +277,95 @@ class ProfilePageState extends State<ProfilePage> {
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Theme.of(context).primaryColor,
-                      child: Text(
-                        username?[0].toUpperCase() ?? 'U',
-                        style:
-                            const TextStyle(fontSize: 32, color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
+          SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            username ?? 'User',
-                            style: const TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold),
+                            'Username: $username',
+                            style: const TextStyle(fontSize: 16),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Text(
-                            'Email: ${email ?? 'Not provided'}',
-                            style: TextStyle(
-                                fontSize: 16, color: Colors.grey[600]),
+                            'Email: $email',
+                            style: const TextStyle(fontSize: 16),
                           ),
-                          Text(
-                            'Role: ${widget.role ?? 'User'}',
-                            style: TextStyle(
-                                fontSize: 14, color: Colors.grey[600]),
+                        ],
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Edit Profile'),
+                        onPressed: () {
+                          setState(() {
+                            showUpdateForm = !showUpdateForm;
+                            usernameController.text = username ?? '';
+                            emailController.text = email ?? '';
+                            passwordController.text = password ?? '';
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  if (showUpdateForm) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: usernameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Username',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: emailController,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: passwordController,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Password',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _updateProfile,
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text('Save Changes'),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(showUpdateForm
-                          ? Icons.keyboard_arrow_up
-                          : Icons.edit),
-                      onPressed: () {
-                        setState(() {
-                          showUpdateForm = !showUpdateForm;
-                          usernameController.text = username ?? '';
-                          emailController.text = email ?? '';
-                          passwordController.text = password ?? '';
-                        });
-                      },
-                    ),
                   ],
-                ),
-                if (showUpdateForm) ...[
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: usernameController,
-                    decoration: const InputDecoration(labelText: 'Username'),
-                  ),
-                  TextField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                  ),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Password'),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: _updateProfile,
-                      child: const Text('Save'),
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
           Padding(
@@ -283,84 +388,7 @@ class ProfilePageState extends State<ProfilePage> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<OrderHistory>>(
-              future: orderHistory,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/images/welcome.png',
-                          width: 200,
-                          height: 200,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No order history',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    final order = snapshot.data![index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: ListTile(
-                        leading: SizedBox(
-                          width: 60,
-                          height: 60,
-                          child: Image.network(
-                            order.imageUrl.isNotEmpty
-                                ? order.imageUrl
-                                : 'https://th.bing.com/th/id/OIP.FPIFJ6xedtnTAxk0T7AKhwHaF9?rs=1&pid=ImgDetMain',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        title: Text(
-                          order.productName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Quantity: ${order.quantity}'),
-                            Text(
-                              'Total: Rp ${order.totalPrice.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Colors.green),
-                            ),
-                            Text(
-                              'Date: ${order.createdAt.toString().split('.')[0]}',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deleteOrder(order.id),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            child: _buildOrderHistoryList(),
           ),
         ],
       ),
