@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:projectakhir_mobile/pages/base_page.dart';
-import 'package:projectakhir_mobile/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +13,7 @@ void main() async {
   print('Username  darri main: $username');
   print('Password  darri main: $password');
   print('Role darri main: $role');
-  runApp(
-      MyApp(token: token, username: username, password: password));
+  runApp(MyApp(token: token, username: username, password: password, role: role));
 }
 
 class MyApp extends StatelessWidget {
@@ -41,9 +39,6 @@ class MyApp extends StatelessWidget {
         password: password,
         role:role
       ),
-      routes: {
-        '/login': (context) => const LoginPage(),
-      },
     );
   }
 }

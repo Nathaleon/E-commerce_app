@@ -1,18 +1,35 @@
-import 'dart:io'; // For File
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // For ImagePicker
+import 'package:image_picker/image_picker.dart';
 import 'package:projectakhir_mobile/services/product_service.dart';
 
-class AddProductPage extends StatefulWidget {
+class EditProductPage extends StatefulWidget {
   final String? token;
-  final Function onProductAdded;
-  const AddProductPage({super.key, this.token, required this.onProductAdded});
+  final int productId;
+  final String name;
+  final String price;
+  final String stock;
+  final String description;
+  final String category;
+  final String imageUrl;
+
+  const EditProductPage({
+    super.key,
+    this.token,
+    required this.productId,
+    required this.name,
+    required this.price,
+    required this.stock,
+    required this.description,
+    required this.category,
+    required this.imageUrl,
+  });
 
   @override
-  State<AddProductPage> createState() => _AddProductPageState();
+  _EditProductPageState createState() => _EditProductPageState();
 }
 
-class _AddProductPageState extends State<AddProductPage> {
+class _EditProductPageState extends State<EditProductPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
@@ -33,6 +50,16 @@ class _AddProductPageState extends State<AddProductPage> {
 
   final ImagePicker _picker = ImagePicker();
 
+  @override
+  void initState() {
+    super.initState();
+    _nameController.text = widget.name;
+    _priceController.text = widget.price;
+    _stockController.text = widget.stock;
+    _descriptionController.text = widget.description;
+    _selectedCategory = widget.category;
+  }
+
   Future<void> _pickImage() async {
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -45,43 +72,39 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   void _submitForm() async {
-    if (_formKey.currentState!.validate() && _selectedImage != null) {
-      try {
-        final success = await ProductService.createProduct({
+  if (_formKey.currentState!.validate() && (_selectedImage != null || widget.imageUrl.isNotEmpty)) {
+    try {
+      final success = await ProductService.updateProduct(
+        widget.productId,
+        {
           'name': _nameController.text,
           'price': _priceController.text,
           'stock': _stockController.text,
           'description': _descriptionController.text,
           'category': _selectedCategory,
-        }, widget.token!, _selectedImage!); // Pass image file
+        },
+        widget.token!,
+        imageFile: _selectedImage, // Pass selected image file to the service
+      );
 
-        if (mounted) {
-          if (success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Product added successfully')),
-            );
-            widget.onProductAdded();
-            // Clear form
-            _nameController.clear();
-            _priceController.clear();
-            _stockController.clear();
-            _descriptionController.clear();
-            _selectedImage = null; // Clear image
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
-          );
-        }
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product updated successfully')),
+        );
+        Navigator.pop(context); // Go back after successful update
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select an image")),
+        SnackBar(content: Text('Failed to update product: $e')),
       );
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please select an image or use default image")),
+    );
   }
+}
+
 
   @override
   void dispose() {
@@ -96,8 +119,8 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Product'),
-        automaticallyImplyLeading: false,
+        title: const Text('Edit Product'),
+        automaticallyImplyLeading: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -201,6 +224,9 @@ class _AddProductPageState extends State<AddProductPage> {
               if (_selectedImage != null) ...[
                 Image.file(_selectedImage!),
                 const SizedBox(height: 16),
+              ] else if (widget.imageUrl.isNotEmpty) ...[
+                Image.network(widget.imageUrl),
+                const SizedBox(height: 16),
               ],
               const SizedBox(height: 24),
               ElevatedButton(
@@ -209,7 +235,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(
-                  'Add Product',
+                  'Update Product',
                   style: TextStyle(fontSize: 16),
                 ),
               ),

@@ -1,10 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:projectakhir_mobile/models/product_model.dart';
 import 'package:projectakhir_mobile/secrets/user_secrets.dart';
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ProductService {
   static const String baseUrl = secretBaseUrl;
+
   static Future<List<Product>> getAllProducts() async {
     final response = await http.get(Uri.parse('$baseUrl/api/products/'));
     if (response.statusCode == 200) {
@@ -23,21 +27,46 @@ class ProductService {
   static Future<bool> createProduct(
     Map<String, String> productData,
     String token,
+    File imageFile, // The image file passed from the UI
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/products/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(productData),
+      print('$baseUrl/api/products/add');
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(
+            '$baseUrl/api/products/add'), // Replace with your API endpoint
       );
+
+      request.headers.addAll({
+        'Content-Type': 'multipart/form-data',
+        'Authorization': 'Bearer $token',
+      });
+
+      // Add product data fields
+      request.fields['name'] = productData['name']!;
+      request.fields['price'] = productData['price']!;
+      request.fields['stock'] = productData['stock']!;
+      request.fields['description'] = productData['description']!;
+      request.fields['category'] = productData['category']!;
+
+      // Add image file as part of multipart
+      String mimeType =
+          lookupMimeType(imageFile.path) ?? 'image/jpeg'; // Ensure mime type
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image', // The field name in the backend API
+          imageFile.path,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      // Send request
+      final response = await request.send();
 
       if (response.statusCode == 201) {
         return true;
       } else {
-        throw Exception('Failed to create product: ${response.body}');
+        throw Exception(response.statusCode);
       }
     } catch (e) {
       throw Exception('Failed to create product: $e');
@@ -45,19 +74,40 @@ class ProductService {
   }
 
   static Future<bool> updateProduct(
-    int id,
-    Map<String, dynamic> productData,
-    String token,
-  ) async {
+      int id, Map<String, dynamic> productData, String token,
+      {File? imageFile}) async {
     try {
-      final response = await http.put(
+      final request = http.MultipartRequest(
+        'PUT',
         Uri.parse('$baseUrl/api/products/$id'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(productData),
       );
+
+      request.headers.addAll({
+        'Content-Type': 'multipart/form-data',
+        'Authorization': 'Bearer $token',
+      });
+
+      // Add product data fields
+      request.fields['name'] = productData['name'];
+      request.fields['price'] = productData['price'];
+      request.fields['stock'] = productData['stock'];
+      request.fields['description'] = productData['description'];
+      request.fields['category'] = productData['category'];
+
+      // Add image file if provided
+      if (imageFile != null) {
+        String mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image', // The field name in the backend API
+            imageFile.path,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
+
+      // Send the request
+      final response = await request.send();
 
       if (response.statusCode == 200) {
         return true;

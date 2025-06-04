@@ -27,6 +27,14 @@ class _BasePageState extends State<BasePage> {
 
   final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
   final GlobalKey<CartPageState> _cartKey = GlobalKey<CartPageState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Always start with home page
+    _selectedIndex = 0;
+  }
+
   void _onCheckoutSuccess() {
     setState(() {
       _selectedIndex = 3;
@@ -41,19 +49,33 @@ class _BasePageState extends State<BasePage> {
     _cartKey.currentState?.loadCart();
   }
 
-  List<Widget> _buildPages() => [
-        MainProductPage(
-          token: widget.token,
-          username: widget.username,
-          role: widget.role,
-          onCartUpdated: _onCartUpdated,
-        ),
+  void _onProductAdded() {
+    setState(() {
+      // Refresh the products list by reloading MainProductPage
+      // If you have a way to reload the products on MainProductPage, call that here.
+    });
+  }
+  List<Widget> _buildPages() {
+    // Always include MainProductPage as the first page
+    final List<Widget> pages = [
+      MainProductPage(
+        token: widget.token,
+        username: widget.username,
+        role: widget.role,
+        onCartUpdated: _onCartUpdated,
+        onProductAdded: _onProductAdded,
+      ),
+    ];
+
+    // Only add other pages if user is logged in
+    if (widget.token != null) {
+      pages.addAll([
         CartPage(
           key: _cartKey,
           token: widget.token,
           onCheckoutDone: _onCheckoutSuccess,
         ),
-        AddProductPage(token: widget.token),
+        if (widget.role == 'admin') AddProductPage(token: widget.token, onProductAdded: _onProductAdded),
         ProfilePage(
           token: widget.token,
           username: widget.username,
@@ -61,51 +83,83 @@ class _BasePageState extends State<BasePage> {
           role: widget.role,
           key: _profileKey,
         ),
-      ];
+      ]);
+    }
+
+    return pages;
+  }
 
   void _onItemTapped(int index) {
     if (!mounted) return;
 
-    if (widget.role != 'admin' && index == 2) {
+    // If user is not logged in and tries to access protected pages
+    if (widget.token == null && index != 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Only admin can access this feature")),
+        const SnackBar(
+          content: Text("Please login to access this feature"),
+          duration: Duration(seconds: 2),
+        ),
       );
+      // Keep them on home page
+      setState(() => _selectedIndex = 0);
       return;
     }
-
-    // if (widget.token == null && index != 0) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text("Please login first")),
-    //   );
-    //   return;
-    // }
 
     setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final pages = _buildPages(); // Rebuild all pages as needed
+    final pages = _buildPages();
+    final isLoggedIn = widget.token != null;
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart), label: 'Cart'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle), label: 'Add Product'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: _onItemTapped,
+    return PopScope(
+      // onWillPop: () async {
+      //   // If user is logged in, prevent back button
+      //   if (isLoggedIn) {
+      //     return false;
+      //   }
+      //   // If not logged in and not on home page, go to home
+      //   if (_selectedIndex != 0) {
+      //     setState(() => _selectedIndex = 0);
+      //     return false;
+      //   }
+      //   // Allow back navigation only for guest users
+      //   return true;
+      // },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: pages,
+        ),
+        bottomNavigationBar: isLoggedIn
+            ? BottomNavigationBar(
+                items: [
+                  const BottomNavigationBarItem(
+                    icon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  const BottomNavigationBarItem(
+                    icon: Icon(Icons.shopping_cart),
+                    label: 'Cart',
+                  ),
+                  if (widget.role == 'admin')
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.add_circle),
+                      label: 'Add Product',
+                    ),
+                  const BottomNavigationBarItem(
+                    icon: Icon(Icons.person),
+                    label: 'Profile',
+                  ),
+                ],
+                currentIndex: _selectedIndex,
+                selectedItemColor: Colors.green,
+                unselectedItemColor: Colors.grey,
+                type: BottomNavigationBarType.fixed,
+                onTap: _onItemTapped,
+              )
+            : null,
       ),
     );
   }

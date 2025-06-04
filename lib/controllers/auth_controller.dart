@@ -28,8 +28,6 @@ class AuthController {
       final decoded = JwtDecoder.decode(token);
       final role = decoded['role'];
       await prefs.setString('role', role);
-
-      // Panggil callback UI
       onSuccess(token, username, role);
     } catch (e) {
       ScaffoldMessenger.of(
@@ -45,6 +43,7 @@ class AuthController {
     required BuildContext context,
     required String username,
     required String password,
+    required String email,
     required void Function(bool) setLoading,
     required void Function() onSuccess,
   }) async {
@@ -52,7 +51,7 @@ class AuthController {
     try {
       final response = await UserService.register({
         "username": username,
-        "email": "$username@example.com", // fallback jika tidak ada email field
+        "email": email,
         "password": password,
         "role": "customer",
       });

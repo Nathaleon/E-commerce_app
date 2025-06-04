@@ -167,8 +167,7 @@ class _LoginPageState extends State<LoginPage> {
                               context: context,
                               username: usernameController.text,
                               password: passwordController.text,
-                              setLoading: (value) =>
-                                  setState(() => isLoading = value),
+                              setLoading: (value) => setState(() => isLoading = value),
                               onSuccess: (token, username, role) {
                                 Navigator.pushReplacement(
                                   context,
@@ -257,12 +256,12 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     );
                   },
-                  child: Text(
+                  child: const Text(
                     'Continue without login',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white,
                     ),
                   ),
                 ),

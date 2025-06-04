@@ -19,6 +19,7 @@ class _RegisterPageState extends State<RegisterPage> {
       context: context,
       username: usernameController.text,
       password: passwordController.text,
+      email: emailController.text,
       setLoading: (value) => setState(() => isLoading = value),
       onSuccess: () {
         ScaffoldMessenger.of(context).showSnackBar(

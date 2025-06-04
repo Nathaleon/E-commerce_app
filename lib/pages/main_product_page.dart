@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
 import 'package:projectakhir_mobile/models/product_model.dart';
 import 'package:projectakhir_mobile/pages/detail_page.dart';
+import 'package:projectakhir_mobile/pages/edit_product_page.dart';
 import 'package:projectakhir_mobile/pages/login_page.dart';
 import 'package:projectakhir_mobile/services/cart_service.dart';
 import 'package:projectakhir_mobile/services/product_service.dart';
@@ -12,9 +12,15 @@ class MainProductPage extends StatefulWidget {
   final String? username;
   final String? role;
   final VoidCallback? onCartUpdated;
+  final VoidCallback onProductAdded;
 
   const MainProductPage(
-      {super.key, this.token, this.username, this.role, this.onCartUpdated});
+      {super.key,
+      this.token,
+      this.username,
+      this.role,
+      this.onCartUpdated,
+      required this.onProductAdded});
 
   @override
   State<MainProductPage> createState() => _MainProductPageState();
@@ -31,33 +37,17 @@ class _MainProductPageState extends State<MainProductPage> {
   @override
   void initState() {
     super.initState();
-    products = ProductService.getAllProducts();
-
-    //check if token is null
-    // if (widget.token == null) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(content: Text("Please login to view products")),
-    //     );
-    //   });
-    //   return;
-    // }
-
-    // CartService.getCartItems(widget.token ?? '').then((items) {
-    //   if (mounted) {
-    //     setState(() {
-    //       // Update UI if needed
-    //     });
-    //   }
-    // });
-
+    _loadProducts();
     if (widget.role != null) {
       userRole = widget.role;
-    } else if (widget.token != null) {
-      final decoded = JwtDecoder.decode(widget.token!);
-      userRole = decoded['role'];
-      print('User Role: $userRole');
     }
+  }
+
+  void _loadProducts() {
+    setState(() {
+      products = ProductService.getAllProducts();
+    });
+    print(products);
   }
 
   void _applyFilters(List<Product> items) {
@@ -83,6 +73,25 @@ class _MainProductPageState extends State<MainProductPage> {
           (a, b) => double.parse(b.price).compareTo(double.parse(a.price)),
         );
         break;
+    }
+  }
+
+  void deleteProduct(int productId) async {
+    try {
+      bool success =
+          await ProductService.deleteProduct(productId, widget.token!);
+      if (success) {
+        setState(() {
+          _loadProducts(); // Refresh the list after deleting the product
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Product deleted successfully")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete product: $e")),
+      );
     }
   }
 
@@ -208,22 +217,7 @@ class _MainProductPageState extends State<MainProductPage> {
                         child:
                             Text('Furniture', style: TextStyle(fontSize: 12)),
                       ),
-                      DropdownMenuItem(
-                        value: 'sports',
-                        child: Text('Sports', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'beauty',
-                        child: Text('Beauty', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'health',
-                        child: Text('Health', style: TextStyle(fontSize: 12)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'children',
-                        child: Text('Children', style: TextStyle(fontSize: 12)),
-                      ),
+                      // Add more categories
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -345,22 +339,64 @@ class _MainProductPageState extends State<MainProductPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: TextButton.icon(
-                                      onPressed: () => addToCart(product),
-                                      icon: const Icon(Icons.shopping_cart,
-                                          color: Colors.green),
-                                      label: const Text(
-                                        'Add to Cart',
-                                        style: TextStyle(color: Colors.green),
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 4),
+                                  if (widget.role == 'admin') ...[
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit,
+                                              color: Colors.blue),
+                                          onPressed: () {
+                                            //go to edit product page
+                                            Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      EditProductPage(
+                                                    productId: product.id,
+                                                    name: product.name,
+                                                    price: product.price,
+                                                    stock: product.stock
+                                                        .toString(),
+                                                    description:
+                                                        product.description,
+                                                    category: product.category,
+                                                    imageUrl: product.imageUrl,
+                                                    token: widget.token,
+                                                  ),
+                                                ));
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete,
+                                              color: Colors.red),
+                                          onPressed: () {
+                                            deleteProduct(product
+                                                .id); // Call delete method
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ] else ...[
+                                    // Add to Cart Button for non-admin
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: TextButton.icon(
+                                        onPressed: () => addToCart(product),
+                                        icon: const Icon(Icons.shopping_cart,
+                                            color: Colors.green),
+                                        label: const Text(
+                                          'Add to Cart',
+                                          style: TextStyle(color: Colors.green),
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 4),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ]
                                 ],
                               ),
                             ),
