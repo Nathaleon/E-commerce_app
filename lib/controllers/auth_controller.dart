@@ -11,13 +11,13 @@ class AuthController {
     required String username,
     required String password,
     required void Function(bool) setLoading,
-    required void Function(String token, String username) onSuccess,
+    required void Function(String token, String username, String role) onSuccess,
   }) async {
     setLoading(true);
     try {
       final response = await UserService.login(username, password);
       final token = response.token;
-
+      print('Login successful, token: $token');
       // Simpan token dan username di SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('access_token', token);
@@ -30,7 +30,7 @@ class AuthController {
       await prefs.setString('role', role);
 
       // Panggil callback UI
-      onSuccess(token, username);
+      onSuccess(token, username, role);
     } catch (e) {
       ScaffoldMessenger.of(
         context,

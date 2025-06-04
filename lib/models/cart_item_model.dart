@@ -31,10 +31,10 @@ class CartItem {
     return CartItem(
       id: json['id'],
       productId: json['product_id'],
-      productName: json['product_name'] ?? 'Unknown Product',
+      productName: json['product_name'],
       imageUrl: json['image_url'] ?? '',
-        price: double.tryParse(json['total_price'].toString()) ?? 0.0,
-      quantity: json['quantity'] ?? 1,
+      price: double.tryParse(json['total_price'].toString()) ?? 0.0,
+      quantity: json['quantity'],
     );
   }
 }

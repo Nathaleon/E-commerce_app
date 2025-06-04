@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
 import 'package:projectakhir_mobile/services/cart_service.dart';
-import 'package:projectakhir_mobile/services/order_service.dart';
 
 class CartPage extends StatefulWidget {
   final String? token;
@@ -10,65 +9,95 @@ class CartPage extends StatefulWidget {
   const CartPage({super.key, this.token, this.onCheckoutDone});
 
   @override
-  State<CartPage> createState() => _CartPageState();
+  State<CartPage> createState() => CartPageState();
 }
 
-class _CartPageState extends State<CartPage> {
+class CartPageState extends State<CartPage> {
   bool isLoading = true;
   Set<int> selectedProductIds = {};
+  List<CartItem> items = [];
+
   @override
   void initState() {
     super.initState();
-    _loadCart();
+    loadCart();
   }
 
-  Future<void> _loadCart() async {
+  @override
+  void didUpdateWidget(covariant CartPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.token != oldWidget.token) {
+      loadCart();
+    }
+  }
+
+  Future<void> loadCart() async {
     setState(() => isLoading = true);
-    await CartService.loadCart();
+    try {
+      items = await CartService.getCartItems(widget.token!);
+      selectedProductIds = items.map((e) => e.id).toSet(); // pakai id order
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please login to view products")),
+        );
+      });
+    }
     setState(() => isLoading = false);
   }
 
   Future<void> _updateQuantity(CartItem item, int delta) async {
-    await CartService.updateQuantity(item.productId, item.quantity + delta);
-    setState(() {});
+  final newQuantity = item.quantity + delta;
+
+  try {
+    if (newQuantity <= 0) {
+      await CartService.deleteOrder(item.id, widget.token!);
+      setState(() {
+        items.removeWhere((e) => e.id == item.id);
+        selectedProductIds.remove(item.productId);
+      });
+    } else {
+      // final totalPrice = item.price * newQuantity;
+      await CartService.updateQuantity(
+        item.id,
+        newQuantity,
+        widget.token!,
+        item.price
+      );
+      setState(() {
+        item.quantity = newQuantity;
+        // total dihitung lewat getter
+      });
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update cart: $e")),
+      );
+    }
   }
+}
+
 
   double get selectedTotal {
-    return CartService.items
+    return items
         .where((item) => selectedProductIds.contains(item.productId))
         .fold(0.0, (sum, item) => sum + item.total);
   }
 
   Future<void> _checkout() async {
     try {
-      final selectedItems = CartService.items
-          .where((item) => selectedProductIds.contains(item.productId))
-          .toList();
+      final selectedIds = selectedProductIds.toList();
 
-      if (selectedItems.isEmpty) {
+      if (selectedIds.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select items to checkout')),
         );
         return;
       }
 
-      for (var item in selectedItems) {
-        await OrderService.createOrder({
-          'product_id': item.productId,
-          'product_name': item.productName,
-          'image_url': item.imageUrl,
-          'quantity': item.quantity,
-          'total_price': item.total,
-        }, widget.token!);
-      }
-
-      for (var item in selectedItems) {
-        await CartService.removeFromCart(item.productId);
-      }
-
-      setState(() {
-        selectedProductIds.clear();
-      });
+      await CartService.checkoutOrders(selectedIds, widget.token!);
+      await loadCart();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,7 +115,7 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<void> _clearCart() async {
-    await CartService.clearCart();
+    await CartService.clearCart(widget.token!);
     setState(() {
       selectedProductIds.clear();
     });
@@ -94,9 +123,6 @@ class _CartPageState extends State<CartPage> {
 
   @override
   Widget build(BuildContext context) {
-    final items = CartService.items;
-    // final total = CartService.total;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shopping Cart'),
@@ -194,25 +220,25 @@ class _CartPageState extends State<CartPage> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.remove),
-                                  onPressed: () => _updateQuantity(item, -1),
-                                ),
+                                    icon: const Icon(Icons.remove),
+                                    onPressed: () async {
+                                      await _updateQuantity(item, -1);
+                                    }),
                                 Text('${item.quantity}',
                                     style: const TextStyle(fontSize: 16)),
                                 IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: () => _updateQuantity(item, 1),
-                                ),
+                                    icon: const Icon(Icons.add),
+                                    onPressed: () async {
+                                      await _updateQuantity(item, 1);
+                                    }),
                               ],
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () async {
-                                await CartService.removeFromCart(
-                                    item.productId);
-                                setState(() {
-                                  selectedProductIds.remove(item.productId);
-                                });
+                                await CartService.deleteOrder(
+                                    item.id, widget.token!);
+                                await loadCart();
                               },
                             ),
                           ],

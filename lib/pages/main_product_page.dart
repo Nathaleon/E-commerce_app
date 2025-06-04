@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-// import 'package:projectakhir_mobile/controllers/auth_controller.dart';
 import 'package:projectakhir_mobile/models/cart_item_model.dart';
 import 'package:projectakhir_mobile/models/product_model.dart';
-// import 'package:projectakhir_mobile/pages/cart_page.dart';
 import 'package:projectakhir_mobile/pages/detail_page.dart';
 import 'package:projectakhir_mobile/pages/login_page.dart';
-// import 'package:projectakhir_mobile/pages/profile_page.dart';
 import 'package:projectakhir_mobile/services/cart_service.dart';
 import 'package:projectakhir_mobile/services/product_service.dart';
 
@@ -35,7 +32,23 @@ class _MainProductPageState extends State<MainProductPage> {
   void initState() {
     super.initState();
     products = ProductService.getAllProducts();
-    CartService.loadCart();
+    //check if token is null
+    if (widget.token == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please login to view products")),
+        );
+      });
+      return;
+    }
+
+    CartService.getCartItems(widget.token ?? '').then((items) {
+      if (mounted) {
+        setState(() {
+          // Update UI if needed
+        });
+      }
+    });
 
     if (widget.role != null) {
       userRole = widget.role;
@@ -90,7 +103,7 @@ class _MainProductPageState extends State<MainProductPage> {
           product.stock > 0 ? 1 : 0, // Set quantity to 1 if stock is available
     );
 
-    await CartService.addToCart(cartItem);
+    await CartService.addToCart(cartItem, widget.token!);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

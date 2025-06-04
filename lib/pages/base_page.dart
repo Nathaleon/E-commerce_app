@@ -26,20 +26,19 @@ class _BasePageState extends State<BasePage> {
   int _selectedIndex = 0;
 
   final GlobalKey<ProfilePageState> _profileKey = GlobalKey<ProfilePageState>();
-
+  final GlobalKey<CartPageState> _cartKey = GlobalKey<CartPageState>();
   void _onCheckoutSuccess() {
     setState(() {
-      _selectedIndex = 3; // pindah ke Profile tab
+      _selectedIndex = 3;
     });
 
-    // ⏳ beri delay kecil agar profil benar-benar aktif dulu
     Future.delayed(const Duration(milliseconds: 100), () {
       _profileKey.currentState?.refreshOrderHistory();
     });
   }
 
   void _onCartUpdated() {
-    setState(() {}); // Trigger rebuild, CartService sudah global
+    _cartKey.currentState?.loadCart(); 
   }
 
   List<Widget> _buildPages() => [
@@ -50,6 +49,7 @@ class _BasePageState extends State<BasePage> {
           onCartUpdated: _onCartUpdated,
         ),
         CartPage(
+          key: _cartKey,
           token: widget.token,
           onCheckoutDone: _onCheckoutSuccess,
         ),
@@ -58,6 +58,7 @@ class _BasePageState extends State<BasePage> {
           token: widget.token,
           username: widget.username,
           password: widget.password,
+          role: widget.role,
           key: _profileKey,
         ),
       ];

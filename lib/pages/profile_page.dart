@@ -11,9 +11,10 @@ class ProfilePage extends StatefulWidget {
   final String? token;
   final String? username;
   final String? password;
+  final String? role;
   final Key? key;
 
-  const ProfilePage({this.token, this.username, this.password, this.key})
+  const ProfilePage({this.token, this.username, this.password, this.role, this.key})
       : super(key: key);
 
   @override
@@ -213,7 +214,7 @@ class ProfilePageState extends State<ProfilePage> {
                                 fontSize: 16, color: Colors.grey[600]),
                           ),
                           Text(
-                            'Role: ${decodedToken?['role'] ?? 'Not provided'}',
+                            'Role: ${widget.role ?? 'User'}',
                             style: TextStyle(
                                 fontSize: 14, color: Colors.grey[600]),
                           ),

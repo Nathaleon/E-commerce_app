@@ -169,13 +169,15 @@ class _LoginPageState extends State<LoginPage> {
                               password: passwordController.text,
                               setLoading: (value) =>
                                   setState(() => isLoading = value),
-                              onSuccess: (token, username) {
+                              onSuccess: (token, username, role) {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => BasePage(
                                       token: token,
                                       username: username,
+                                      password: passwordController.text,
+                                      role: role,
                                     ),
                                   ),
                                 );

@@ -25,7 +25,7 @@ class ProductDetailPage extends StatelessWidget {
       quantity: product.stock > 0 ? 1 : 0,
     );
 
-    await CartService.addToCart(cartItem);
+    await CartService.addToCart(cartItem, token!);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

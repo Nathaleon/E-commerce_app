@@ -3,24 +3,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:projectakhir_mobile/pages/base_page.dart';
 import 'package:projectakhir_mobile/pages/login_page.dart';
-import 'package:projectakhir_mobile/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('access_token');
-  print('Token: $token');
   final username = prefs.getString('username');
   final password = prefs.getString('password');
-  String? role;
-
-  if (token != null) {
-    final decoded = JwtDecoder.decode(token);
-    role = decoded['role'];
-  }
-
+  final role = prefs.getString('role');
+  print('Token  darri main: $token');
+  print('Username  darri main: $username');
+  print('Password  darri main: $password');
+  print('Role darri main: $role');
   runApp(
-      MyApp(token: token, username: username, role: role, password: password));
+      MyApp(token: token, username: username, password: password));
 }
 
 class MyApp extends StatelessWidget {
@@ -40,7 +36,12 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      home: const BasePage(),
+      home: BasePage(
+        token: token,
+        username: username,
+        password: password,
+        role:role
+      ),
       routes: {
         '/login': (context) => const LoginPage(),
       },
