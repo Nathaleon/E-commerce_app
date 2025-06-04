@@ -37,17 +37,14 @@ class _MainProductPageState extends State<MainProductPage> {
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    products = ProductService.getAllProducts();
+    print('Loading products... $products');
+    //loop the products
+
+
     if (widget.role != null) {
       userRole = widget.role;
     }
-  }
-
-  void _loadProducts() {
-    setState(() {
-      products = ProductService.getAllProducts();
-    });
-    print(products);
   }
 
   void _applyFilters(List<Product> items) {
@@ -82,7 +79,7 @@ class _MainProductPageState extends State<MainProductPage> {
           await ProductService.deleteProduct(productId, widget.token!);
       if (success) {
         setState(() {
-          _loadProducts(); // Refresh the list after deleting the product
+          products = ProductService.getAllProducts(); // Refresh product list
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Product deleted successfully")),
