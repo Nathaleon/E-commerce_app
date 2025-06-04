@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:projectakhir_mobile/pages/main_product_page.dart';
-import 'package:projectakhir_mobile/pages/cart_page.dart';
-import 'package:projectakhir_mobile/pages/profile_page.dart';
 import 'package:projectakhir_mobile/pages/add_product_page.dart';
+import 'package:projectakhir_mobile/pages/cart_page.dart';
+import 'package:projectakhir_mobile/pages/main_product_page.dart';
+import 'package:projectakhir_mobile/pages/profile_page.dart';
 
 class BasePage extends StatefulWidget {
   final String? token;
@@ -38,7 +38,7 @@ class _BasePageState extends State<BasePage> {
   }
 
   void _onCartUpdated() {
-    _cartKey.currentState?.loadCart(); 
+    _cartKey.currentState?.loadCart();
   }
 
   List<Widget> _buildPages() => [
@@ -73,12 +73,12 @@ class _BasePageState extends State<BasePage> {
       return;
     }
 
-    if (widget.token == null && index != 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login first")),
-      );
-      return;
-    }
+    // if (widget.token == null && index != 0) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text("Please login first")),
+    //   );
+    //   return;
+    // }
 
     setState(() => _selectedIndex = index);
   }

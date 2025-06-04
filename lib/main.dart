@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:projectakhir_mobile/pages/base_page.dart';
 import 'package:projectakhir_mobile/pages/login_page.dart';
 

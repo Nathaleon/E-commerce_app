@@ -32,23 +32,24 @@ class _MainProductPageState extends State<MainProductPage> {
   void initState() {
     super.initState();
     products = ProductService.getAllProducts();
-    //check if token is null
-    if (widget.token == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please login to view products")),
-        );
-      });
-      return;
-    }
 
-    CartService.getCartItems(widget.token ?? '').then((items) {
-      if (mounted) {
-        setState(() {
-          // Update UI if needed
-        });
-      }
-    });
+    //check if token is null
+    // if (widget.token == null) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       const SnackBar(content: Text("Please login to view products")),
+    //     );
+    //   });
+    //   return;
+    // }
+
+    // CartService.getCartItems(widget.token ?? '').then((items) {
+    //   if (mounted) {
+    //     setState(() {
+    //       // Update UI if needed
+    //     });
+    //   }
+    // });
 
     if (widget.role != null) {
       userRole = widget.role;

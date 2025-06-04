@@ -245,12 +245,16 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushAndRemoveUntil(
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const BasePage(),
+                        builder: (_) => const BasePage(
+                          token: null,
+                          username: null,
+                          password: null,
+                          role: null,
+                        ),
                       ),
-                      (route) => false,
                     );
                   },
                   child: Text(
