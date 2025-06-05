@@ -51,14 +51,10 @@ class _BasePageState extends State<BasePage> {
   }
 
   void _onProductAdded() {
-    setState(() {
-      // Refresh the products list by reloading MainProductPage
-      // If you have a way to reload the products on MainProductPage, call that here.
-    });
+    setState(() {});
   }
 
   List<Widget> _buildPages() {
-    // Always include MainProductPage as the first page
     final List<Widget> pages = [
       MainProductPage(
         token: widget.token,
@@ -69,7 +65,6 @@ class _BasePageState extends State<BasePage> {
       ),
     ];
 
-    // Only add other pages if user is logged in
     if (widget.token != null) {
       pages.addAll([
         CartPage(
@@ -95,7 +90,6 @@ class _BasePageState extends State<BasePage> {
   void _onItemTapped(int index) {
     if (!mounted) return;
 
-    // If user is not logged in and tries to access protected pages
     if (widget.token == null && index != 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -103,7 +97,6 @@ class _BasePageState extends State<BasePage> {
           duration: Duration(seconds: 2),
         ),
       );
-      // Keep them on home page
       setState(() => _selectedIndex = 0);
       return;
     }

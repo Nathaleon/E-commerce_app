@@ -43,7 +43,6 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 35),
-                // Logo and App Name
                 Column(
                   children: [
                     Image.asset(

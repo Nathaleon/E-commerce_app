@@ -36,7 +36,7 @@ class _EditProductPageState extends State<EditProductPage> {
   final _stockController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _selectedCategory = 'fashion';
-  File? _selectedImage; // For holding the picked image file
+  File? _selectedImage;
 
   final List<String> _categories = [
     'fashion',
@@ -72,39 +72,40 @@ class _EditProductPageState extends State<EditProductPage> {
   }
 
   void _submitForm() async {
-  if (_formKey.currentState!.validate() && (_selectedImage != null || widget.imageUrl.isNotEmpty)) {
-    try {
-      final success = await ProductService.updateProduct(
-        widget.productId,
-        {
-          'name': _nameController.text,
-          'price': _priceController.text,
-          'stock': _stockController.text,
-          'description': _descriptionController.text,
-          'category': _selectedCategory,
-        },
-        widget.token!,
-        imageFile: _selectedImage, // Pass selected image file to the service
-      );
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product updated successfully')),
+    if (_formKey.currentState!.validate() &&
+        (_selectedImage != null || widget.imageUrl.isNotEmpty)) {
+      try {
+        final success = await ProductService.updateProduct(
+          widget.productId,
+          {
+            'name': _nameController.text,
+            'price': _priceController.text,
+            'stock': _stockController.text,
+            'description': _descriptionController.text,
+            'category': _selectedCategory,
+          },
+          widget.token!,
+          imageFile: _selectedImage,
         );
-        Navigator.pop(context); // Go back after successful update
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Product updated successfully')),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update product: $e')),
+        );
       }
-    } catch (e) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update product: $e')),
+        const SnackBar(
+            content: Text("Please select an image or use default image")),
       );
     }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please select an image or use default image")),
-    );
   }
-}
-
 
   @override
   void dispose() {

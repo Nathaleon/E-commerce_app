@@ -11,20 +11,19 @@ class AuthController {
     required String username,
     required String password,
     required void Function(bool) setLoading,
-    required void Function(String token, String username, String role) onSuccess,
+    required void Function(String token, String username, String role)
+        onSuccess,
   }) async {
     setLoading(true);
     try {
       final response = await UserService.login(username, password);
       final token = response.token;
       print('Login successful, token: $token');
-      // Simpan token dan username di SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('access_token', token);
       await prefs.setString('username', username);
       await prefs.setString('password', password);
 
-      // Decode token untuk ambil role (opsional disimpan)
       final decoded = JwtDecoder.decode(token);
       final role = decoded['role'];
       await prefs.setString('role', role);

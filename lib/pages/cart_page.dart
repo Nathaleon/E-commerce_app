@@ -62,7 +62,6 @@ class CartPageState extends State<CartPage> {
             item.id, newQuantity, widget.token!, item.price);
         setState(() {
           item.quantity = newQuantity;
-          // total dihitung lewat getter
         });
       }
     } catch (e) {

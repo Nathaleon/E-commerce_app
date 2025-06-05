@@ -229,7 +229,22 @@ class _MainProductPageState extends State<MainProductPage> {
                         child:
                             Text('Furniture', style: TextStyle(fontSize: 12)),
                       ),
-                      // Add more categories
+                      DropdownMenuItem(
+                        value: 'health',
+                        child: Text('Health', style: TextStyle(fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'sports',
+                        child: Text('Sports', style: TextStyle(fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'beauty',
+                        child: Text('Beauty', style: TextStyle(fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'children',
+                        child: Text('Children', style: TextStyle(fontSize: 12)),
+                      ),
                     ],
                     onChanged: (value) {
                       setState(() {

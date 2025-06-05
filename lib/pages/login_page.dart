@@ -156,7 +156,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                // Login Button
                 SizedBox(
                   height: 55,
                   child: ElevatedButton(
@@ -167,7 +166,8 @@ class _LoginPageState extends State<LoginPage> {
                               context: context,
                               username: usernameController.text,
                               password: passwordController.text,
-                              setLoading: (value) => setState(() => isLoading = value),
+                              setLoading: (value) =>
+                                  setState(() => isLoading = value),
                               onSuccess: (token, username, role) {
                                 Navigator.pushReplacement(
                                   context,
@@ -211,7 +211,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

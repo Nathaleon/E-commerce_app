@@ -1,6 +1,6 @@
-import 'dart:io'; // For File
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // For ImagePicker
+import 'package:image_picker/image_picker.dart';
 import 'package:projectakhir_mobile/services/product_service.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -19,7 +19,7 @@ class _AddProductPageState extends State<AddProductPage> {
   final _stockController = TextEditingController();
   final _descriptionController = TextEditingController();
   String _selectedCategory = 'fashion';
-  File? _selectedImage; // For holding the picked image file
+  File? _selectedImage;
 
   final List<String> _categories = [
     'fashion',
@@ -53,7 +53,7 @@ class _AddProductPageState extends State<AddProductPage> {
           'stock': _stockController.text,
           'description': _descriptionController.text,
           'category': _selectedCategory,
-        }, widget.token!, _selectedImage!); // Pass image file
+        }, widget.token!, _selectedImage!);
 
         if (mounted) {
           if (success) {
@@ -61,12 +61,12 @@ class _AddProductPageState extends State<AddProductPage> {
               const SnackBar(content: Text('Product added successfully')),
             );
             widget.onProductAdded();
-            // Clear form
+
             _nameController.clear();
             _priceController.clear();
             _stockController.clear();
             _descriptionController.clear();
-            _selectedImage = null; // Clear image
+            _selectedImage = null;
           }
         }
       } catch (e) {
@@ -191,13 +191,11 @@ class _AddProductPageState extends State<AddProductPage> {
                 },
               ),
               const SizedBox(height: 16),
-              // Image Picker Button
               ElevatedButton(
                 onPressed: _pickImage,
                 child: const Text('Pick Image from Gallery'),
               ),
               const SizedBox(height: 16),
-              // Show image preview if selected
               if (_selectedImage != null) ...[
                 Image.file(_selectedImage!),
                 const SizedBox(height: 16),

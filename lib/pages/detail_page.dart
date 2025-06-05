@@ -23,7 +23,7 @@ class ProductDetailPage extends StatelessWidget {
         productName: product.name,
         imageUrl: product.imageUrl,
         price: double.parse(product.price),
-        quantity: 1, // Always start with quantity 1
+        quantity: 1,
       );
 
       await CartService.addToCart(cartItem, token!);
@@ -58,9 +58,7 @@ class ProductDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              // optional: navigate to cart page
-            },
+            onPressed: () {},
           ),
         ],
       ),

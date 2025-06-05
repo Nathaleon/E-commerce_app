@@ -27,14 +27,13 @@ class ProductService {
   static Future<bool> createProduct(
     Map<String, String> productData,
     String token,
-    File imageFile, // The image file passed from the UI
+    File imageFile,
   ) async {
     try {
       print('$baseUrl/api/products/add');
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse(
-            '$baseUrl/api/products/add'), // Replace with your API endpoint
+        Uri.parse('$baseUrl/api/products/add'),
       );
 
       request.headers.addAll({
@@ -42,25 +41,21 @@ class ProductService {
         'Authorization': 'Bearer $token',
       });
 
-      // Add product data fields
       request.fields['name'] = productData['name']!;
       request.fields['price'] = productData['price']!;
       request.fields['stock'] = productData['stock']!;
       request.fields['description'] = productData['description']!;
       request.fields['category'] = productData['category']!;
 
-      // Add image file as part of multipart
-      String mimeType =
-          lookupMimeType(imageFile.path) ?? 'image/jpeg'; // Ensure mime type
+      String mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
       request.files.add(
         await http.MultipartFile.fromPath(
-          'image', // The field name in the backend API
+          'image',
           imageFile.path,
           contentType: MediaType.parse(mimeType),
         ),
       );
 
-      // Send request
       final response = await request.send();
 
       if (response.statusCode == 201) {
@@ -87,26 +82,23 @@ class ProductService {
         'Authorization': 'Bearer $token',
       });
 
-      // Add product data fields
       request.fields['name'] = productData['name'];
       request.fields['price'] = productData['price'];
       request.fields['stock'] = productData['stock'];
       request.fields['description'] = productData['description'];
       request.fields['category'] = productData['category'];
 
-      // Add image file if provided
       if (imageFile != null) {
         String mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
         request.files.add(
           await http.MultipartFile.fromPath(
-            'image', // The field name in the backend API
+            'image',
             imageFile.path,
             contentType: MediaType.parse(mimeType),
           ),
         );
       }
 
-      // Send the request
       final response = await request.send();
 
       if (response.statusCode == 200) {
@@ -164,7 +156,6 @@ class ProductService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        // Parse error message from response if available
         String errorMessage = 'Failed to update stock';
         try {
           final errorBody = json.decode(response.body);
