@@ -5,6 +5,7 @@ class CartItem {
   final String imageUrl;
   final double price;
   int quantity;
+  String status;
 
   CartItem({
     required this.id,
@@ -13,6 +14,7 @@ class CartItem {
     required this.imageUrl,
     required this.price,
     required this.quantity,
+    this.status = 'pending',
   });
 
   double get total => price * quantity;
@@ -35,6 +37,7 @@ class CartItem {
       imageUrl: json['image_url'] ?? '',
       price: double.tryParse(json['total_price'].toString()) ?? 0.0,
       quantity: json['quantity'],
+      status: json['status'] ?? 'pending',
     );
   }
 }

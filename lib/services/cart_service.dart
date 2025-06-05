@@ -32,24 +32,38 @@ class CartService {
   }
 
   static Future<void> addToCart(CartItem item, String token) async {
-    // Check stock availability first
     try {
+      // Check stock availability first
       final currentStock = await ProductService.getProductStock(item.productId);
 
-      // Stock validations
       if (currentStock <= 0) {
         throw 'Product is out of stock';
       }
 
-      if (item.quantity <= 0) {
-        throw 'Invalid quantity selected';
+      // Get existing cart items to check for duplicates
+      final existingItems = await getCartItems(token);
+      final existingItem = existingItems
+          .where((i) => i.productId == item.productId && i.status == 'pending')
+          .firstOrNull;
+
+      if (existingItem != null) {
+        // If item exists, update quantity instead of creating new order
+        final newQuantity = existingItem.quantity + item.quantity;
+
+        if (newQuantity > currentStock) {
+          throw 'Requested quantity exceeds available stock ($currentStock)';
+        }
+
+        await updateQuantity(existingItem.id, newQuantity, token,
+            existingItem.price * newQuantity);
+        return;
       }
 
+      // If item doesn't exist, create new order
       if (item.quantity > currentStock) {
-        throw 'Requested quantity (${item.quantity}) exceeds available stock ($currentStock)';
+        throw 'Requested quantity exceeds available stock ($currentStock)';
       }
 
-      // Add to cart
       final response = await http.post(
         Uri.parse('$baseUrl/api/orders'),
         headers: {
@@ -74,7 +88,6 @@ class CartService {
         throw message;
       }
     } catch (e) {
-      // Convert any error to a simple string message
       final message = e.toString().replaceAll('Exception: ', '');
       throw message;
     }
@@ -90,20 +103,27 @@ class CartService {
       // Check stock availability
       final currentStock = await ProductService.getProductStock(item.productId);
       if (quantity > currentStock) {
-        throw Exception(
-            'Requested quantity exceeds available stock ($currentStock)');
+        throw 'Requested quantity exceeds available stock ($currentStock)';
       }
 
-      await http.put(
+      final response = await http.put(
         Uri.parse('$baseUrl/api/orders/$orderId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'quantity': quantity, 'total_price': totalPrice}),
+        body: jsonEncode({
+          'quantity': quantity,
+          'total_price': totalPrice,
+        }),
       );
+
+      if (response.statusCode != 200) {
+        throw 'Failed to update quantity';
+      }
     } catch (e) {
-      throw Exception('Failed to update quantity: $e');
+      final message = e.toString().replaceAll('Exception: ', '');
+      throw message;
     }
   }
 
@@ -122,7 +142,7 @@ class CartService {
           items.where((item) => orderIds.contains(item.id)).toList();
 
       if (checkoutItems.isEmpty) {
-        throw Exception('No items found for checkout');
+        throw 'No items found for checkout';
       }
 
       // Check stock availability for all items first
@@ -130,8 +150,7 @@ class CartService {
         final currentStock =
             await ProductService.getProductStock(item.productId);
         if (currentStock < item.quantity) {
-          throw Exception(
-              'Insufficient stock for product: ${item.productName}. Available: $currentStock, Requested: ${item.quantity}');
+          throw 'Insufficient stock for product: ${item.productName}. Available: $currentStock, Requested: ${item.quantity}';
         }
       }
 
@@ -141,37 +160,40 @@ class CartService {
       try {
         // If all stocks are available, proceed with checkout and stock updates
         for (final item in checkoutItems) {
-          // Get current stock
+          // Get current stock one last time before update
           final currentStock =
               await ProductService.getProductStock(item.productId);
+          final newStock = currentStock - item.quantity;
 
           // Update stock in database
           final success = await ProductService.updateStock(
             item.productId,
-            currentStock - item.quantity,
+            newStock, // Use calculated new stock
             token,
           );
 
           if (!success) {
-            throw Exception(
-                'Failed to update stock for product: ${item.productName}');
+            throw 'Failed to update stock for product: ${item.productName}';
           }
 
           // Store successful update for potential rollback
           successfulUpdates.add({
             'productId': item.productId,
             'originalStock': currentStock,
-            'newStock': currentStock - item.quantity
+            'newStock': newStock
           });
 
           // Checkout the order
           final response = await http.put(
             Uri.parse('$baseUrl/api/orders/checkout/${item.id}'),
-            headers: {'Authorization': 'Bearer $token'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token'
+            },
           );
 
           if (response.statusCode != 200) {
-            throw Exception('Failed to checkout order: ${item.productName}');
+            throw 'Failed to checkout order: ${item.productName}';
           }
 
           // Add to order history
@@ -197,11 +219,11 @@ class CartService {
             print('Failed to rollback stock update: $rollbackError');
           }
         }
-        throw Exception('Checkout failed: $e');
+        throw 'Checkout failed: $e';
       }
     } catch (e) {
       print('Error during checkout: $e');
-      throw Exception('Failed to checkout orders: $e');
+      throw 'Failed to checkout orders: $e';
     }
   }
 
